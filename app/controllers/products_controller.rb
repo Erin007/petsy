@@ -13,15 +13,19 @@ class ProductsController < ApplicationController
   end
 
   def create
-    #Maybe add @product.price *= 100 so a user can just enter the amount normally and we convert to cents for storage?
     @product = Product.new(product_params)
 
+    #If product saves successfully, convert price to cents, delete blank Category if created, and redirect to show the new product
     if @product.save
+      @product.price *= 100
+      @product.save
       if Category.exists?(name:"")
         blank = Category.find_by(name:"")
         blank.destroy
       end
       redirect_to action: "show", id: @product.id
+
+    #If the product fails to save, redirect the user back to the new product page to try again and display error messages
     else
       flash[:notice] = @product.errors.full_messages
       redirect_to new_product_path
@@ -81,6 +85,8 @@ class ProductsController < ApplicationController
     @product.update(product_params)
 
     if @product.save
+      @product.price *= 100
+      @product.save
       if Category.exists?(name:"")
         blank = Category.find_by(name:"")
         blank.destroy
@@ -95,7 +101,10 @@ class ProductsController < ApplicationController
   def edit
     product
 
+    #Makes sure only the product seller can edit the product and changes product price to dollars for the edit form (switches back to cents via update method)
     if session[:user_id] == @product.user_id
+      @product.price /= 100
+      @product.save
       @product.categories.new
     else
       redirect_to root_path
